@@ -41,10 +41,10 @@ class hdf5_packager(packager):
         packager.__init__(self, 'hdf5', output_path, max_buffer_size)
         print("CREATING FILE IN {}".format(output_path))
         self.events_file = h5py.File(output_path, 'w')
-        self.event_xs = self.events_file.create_dataset("events/xs", (0, ), dtype=np.dtype(np.int16), maxshape=(None, ), chunks=True)
-        self.event_ys = self.events_file.create_dataset("events/ys", (0, ), dtype=np.dtype(np.int16), maxshape=(None, ), chunks=True)
-        self.event_ts = self.events_file.create_dataset("events/ts", (0, ), dtype=np.dtype(np.float64), maxshape=(None, ), chunks=True)
-        self.event_ps = self.events_file.create_dataset("events/ps", (0, ), dtype=np.dtype(np.bool_), maxshape=(None, ), chunks=True)
+        self.event_xs = self.events_file.create_dataset("x", (0, ), dtype=np.dtype(np.int16), maxshape=(None, ), chunks=True)
+        self.event_ys = self.events_file.create_dataset("y", (0, ), dtype=np.dtype(np.int16), maxshape=(None, ), chunks=True)
+        self.event_ts = self.events_file.create_dataset("t", (0, ), dtype=np.dtype(np.float64), maxshape=(None, ), chunks=True)
+        self.event_ps = self.events_file.create_dataset("p", (0, ), dtype=np.dtype(np.bool_), maxshape=(None, ), chunks=True)
 
     def append_to_dataset(self, dataset, data):
         dataset.resize(dataset.shape[0] + len(data), axis=0)

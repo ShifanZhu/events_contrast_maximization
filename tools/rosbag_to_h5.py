@@ -7,7 +7,7 @@ import os
 import h5py
 import numpy as np
 from event_packagers import *
-
+import cv2
 
 def append_to_dataset(dataset, data):
     dataset.resize(dataset.shape[0] + len(data), axis=0)
@@ -51,7 +51,7 @@ def extract_rosbag(rosbag_path, output_path, event_topic, image_topic=None,
     if not os.path.exists(rosbag_path):
         print("{} does not exist!".format(rosbag_path))
         return
-    with rosbag.Bag(rosbag_path, 'r') as bag:
+    with rosbag.Bag(rosbag_path, 'r') as bag, open('/home/zh/data/tum/vie/rosbag_to_h5/images_timestamps.txt', 'w') as timestamp_file:
         # Look for the topics that are available and save the total number of messages for each topic (useful for the progress bar)
         num_event_msgs, num_img_msgs, num_flow_msgs = get_rosbag_stats(bag, event_topic, image_topic, flow_topic)
         # Extract events to h5
@@ -75,12 +75,16 @@ def extract_rosbag(rosbag_path, output_path, event_topic, image_topic=None,
 
             if topic == image_topic:
                 timestamp = timestamp_float(msg.header.stamp)-(first_ts if zero_timestamps else 0)
+                # print('time: ', timestamp*1e6)
+                timestamp_file.write("{:.0f}\n".format(timestamp * 1e6))
                 if is_color:
                     image = CvBridge().imgmsg_to_cv2(msg, "bgr8")
                 else:
                     image = CvBridge().imgmsg_to_cv2(msg, "mono8")
+                filename = "/home/zh/data/tum/vie/rosbag_to_h5/images/frame_{:010d}.png".format(img_cnt)
+                cv2.imwrite(filename, image)
 
-                ep.package_image(image, timestamp, img_cnt)
+                # ep.package_image(image, timestamp, img_cnt)
                 sensor_size = image.shape
                 img_cnt += 1
 
@@ -104,7 +108,7 @@ def extract_rosbag(rosbag_path, output_path, event_topic, image_topic=None,
                     timestamp = timestamp_float(e.ts)-(first_ts if zero_timestamps else 0)
                     xs.append(e.x)
                     ys.append(e.y)
-                    ts.append(timestamp)
+                    ts.append(int(timestamp*1e6))
                     ps.append(1 if e.polarity else 0)
                     if e.polarity:
                         num_pos += 1
@@ -132,7 +136,7 @@ def extract_rosbag(rosbag_path, output_path, event_topic, image_topic=None,
                 del ts[:]
                 del ps[:]
         print("Detect sensor size {}".format(sensor_size))
-        ep.add_metadata(num_pos, num_neg, last_ts-t0, t0, last_ts, img_cnt, flow_cnt, sensor_size)
+        # ep.add_metadata(num_pos, num_neg, last_ts-t0, t0, last_ts, img_cnt, flow_cnt, sensor_size)
 
 
 def extract_rosbags(rosbag_paths, output_dir, event_topic, image_topic, flow_topic,
@@ -152,7 +156,7 @@ if __name__ == "__main__":
     accessed by python code.
     """
     parser = argparse.ArgumentParser()
-    parser.add_argument("path", help="ROS bag file to extract or directory containing bags")
+    parser.add_argument("--path", help="ROS bag file to extract or directory containing bags")
     parser.add_argument("--output_dir", default="/tmp/extracted_data", help="Folder where to extract the data")
     parser.add_argument("--event_topic", default="/dvs/events", help="Event topic")
     parser.add_argument("--image_topic", default=None, help="Image topic (if left empty, no images will be collected)")
